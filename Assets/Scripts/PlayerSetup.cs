@@ -2,11 +2,11 @@
 using UnityEngine.Networking;
 
 [RequireComponent(typeof(Player))]
+[RequireComponent(typeof(PlayerController))]
 public class PlayerSetup : NetworkBehaviour {
 
     [SerializeField]
     Behaviour[] componentsToDisable;
-    Camera sceneCamera;
     [SerializeField]
     private string remoteLayerName = "RemotePlayer";
     [SerializeField]
@@ -15,7 +15,8 @@ public class PlayerSetup : NetworkBehaviour {
     private GameObject playerGraphics;
     [SerializeField]
     private GameObject playerUIPrefab;
-    private GameObject playerUIInstance;
+    [HideInInspector]
+    public GameObject playerUIInstance;
 
     public override void OnStartClient()
     {
@@ -32,18 +33,19 @@ public class PlayerSetup : NetworkBehaviour {
             AssignRemoteLayer();
         } else
         {
-            sceneCamera = Camera.main;
-            if (sceneCamera != null)
-            {
-                sceneCamera.gameObject.SetActive(false);
-            }
             SetLayerRecursively(playerGraphics, LayerMask.NameToLayer(dontDrawLayerName));
 
             playerUIInstance = Instantiate(playerUIPrefab);
-            playerUIInstance.name = Instantiate(playerUIPrefab).name;
+            playerUIInstance.name = playerUIPrefab.name;
+            PlayerUI ui = playerUIInstance.GetComponent<PlayerUI>();
+            if (ui == null)
+            {
+                Debug.LogError("UI does not contain a PlayerUI component.");
+            }
+            ui.SetController(GetComponent<PlayerController>());
+            GetComponent<Player>().SetupPlayer();
         }
-        GetComponent<Player>().Setup();
-	}
+    }
 
     private void SetLayerRecursively(GameObject obj, int newLayer)
     {
@@ -70,9 +72,9 @@ public class PlayerSetup : NetworkBehaviour {
     private void OnDisable()
     {
         Destroy(playerUIInstance);
-        if (sceneCamera != null)
+        if (isLocalPlayer)
         {
-            sceneCamera.gameObject.SetActive(true);
+            GameManager.instance.SetSceneCameraActive(true);
         }
         GameManager.UnregisterPlayer(transform.name);
     }
