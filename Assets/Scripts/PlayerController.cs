@@ -44,6 +44,8 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (PauseMenu.isOn) { return; }
+
         RaycastHit _hit;
         if (Physics.Raycast(transform.position, Vector3.down, out _hit, 100f, environmentMask))
         {
